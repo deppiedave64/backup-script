@@ -4,6 +4,6 @@ After=network.target
 Wants=network.target
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
+Type=simple
+RemainAfterExit=no
 ExecStart=/usr/bin/python3 /home/david/scripts/arch-update-mirrors.py
