@@ -1,0 +1,11 @@
+[Unit]
+Description=Automatically run backup twice a day
+After=multi-user.target
+
+[Timer]
+Unit=backup.service
+OnCalendar=2,14:00:00
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target

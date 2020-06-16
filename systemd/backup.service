@@ -1,0 +1,11 @@
+[Unit]
+Description=Run a backup of the important files on this system
+Requisite=multi-user.target
+
+[Service]
+Type=oneshot
+# By default only back up /etc, /var/log and /root
+# Add paths to backup as positional arguments 
+ExecStart=/usr/bin/backup
+# Change destination and prune settings using env variables
+# See backup script for more infoq
