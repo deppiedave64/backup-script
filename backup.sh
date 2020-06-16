@@ -22,7 +22,9 @@ BACKUP_PASSPHRASE=${BACKUP_PASSPHRASE:-""}
 ###############
 
 # Helper function for printing messages:
-info () { printf "\n%s: %s\n" "$(date)" "$*" >&2}
+info () {
+    printf "\n%s: %s\n" "$(date)" "$*" >&2
+}
 
 # Print exit message when execution is interrupted:
 trap 'info "Backup interrupted"; exit 2' INT TERM
