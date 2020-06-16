@@ -35,13 +35,6 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
-# Check if repository exists:
-if [ ! -f "${BACKUP_DIR}/config" ] || [ ! -d "${BACKUP_DIR}/data" ]; then
-    info "Repo ${BACKUP_DIR} seems to be non-existent. Please create borg repo."
-    exit 2
-fi
-
-
 ################
 #### Backup ####
 ################
