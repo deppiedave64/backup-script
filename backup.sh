@@ -1,5 +1,11 @@
 #!/bin/sh
 
+#### Simple backup script using Borg
+#### By default, back up /etc, /root and /var/log to /mnt/backup
+#### Default values can be overriden using env variables (see config)
+#### Add additional paths to backup as positional parameters, e.g.
+#### $ ./backup.sh /opt/some/dir /opt/another/dir
+
 ################
 #### Config ####
 ################
