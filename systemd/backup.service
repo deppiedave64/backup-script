@@ -8,4 +8,4 @@ Type=oneshot
 # Add paths to backup as positional arguments 
 ExecStart=/usr/bin/backup
 # Change destination and prune settings using env variables
-# See backup script for more infoq
+# See backup script for more info
