@@ -1,60 +1,89 @@
-#!/bin/bash
+#!/bin/sh
 
 ################
 #### Config ####
 ################
 
-DAILY=7
-WEEKLY=4
-BACKUP_DIR="/mnt/backup/"
-USER="david"
+# Set variables to default values if they are unset or empty:
+KEEP_DAILY_BACKUPS=${${KEEP_DAILY_BACKUPS}:-7}
+KEEP_WEEKLY_BACKUPS=${${KEEP_WEEKLY_BACKUPS}:-4}
+KEEP_MONTHLY_BACKUPS=${${KEEP_MONTHLY_BACKUPS}:-6}
+BACKUP_DIR=${${BACKUP_DIR}:-"/mnt/backup/"}
+BACKUP_PASSPHRASE=${${BACKUP_PASSPHRASE}:-""}
 
 ###############
 #### Setup ####
 ###############
 
+# Helper function for printing messages:
+info () { printf "\n%s: %s\n" "$(date)" "$*" >&2}
+
+# Print exit message when execution is interrupted:
+trap 'info "Backup interrupted"; exit 2' INT TERM
+
 # Check for root status:
 if [ "$(id -u)" != "0" ]; then
-    echo "This script must be run as root."
+    info "This script must be run as root!"
     exit 1
 fi
 
-###############################
-#### Backup root partition ####
-###############################
-
-# Check wether backup directory exists:
-if [ ! -d "${BACKUP_DIR}backup_root" ]; then
-    echo "Directory ${BACKUP_DIR}backup_root does not exist."
-    exit 1
+# Check if repository exists:
+if [ ! -f "${BACKUP_DIR}/config" ] || [ ! -d "${BACKUP_DIR}/data" ]; then
+    info "Repo ${BACKUP_DIR} seems to be non-existent. Please create borg repo."
+    exit 2
 fi
 
-# Run backup:
-current_time=$(date +'%Y-%m-%d-%H-%M')
-borg create ${BACKUP_DIR}backup_root::${current_time} /bin /etc /lib /lib64 /opt /sbin /usr
 
-# Delete old backups:
-borg prune ${BACKUP_DIR}backup_root --keep-daily=${DAILY} --keep-weekly=${WEEKLY}
+################
+#### Backup ####
+################
 
-###############################
-#### Backup home partition ####
-###############################
+info "Starting backup"
 
-# Check wether backup directory exists:
-if [ ! -d "${BACKUP_DIR}backup_home" ]; then
-    echo "Directory ${BACKUP_DIR}backup_home does not exist."
-    exit 1
+borg create                            \
+    --verbose                          \
+    --filter AME                       \
+    --list                             \
+    --stats                            \
+    --show-rc                          \
+    --compression zstd,1               \
+    --exclude-caches                   \
+    ${BACKUP_DIR}::'{hostname}-{now}'  \
+    /etc                               \
+    /root                              \
+    /var/log                           \
+    $*
+
+backup_exit=$?
+
+#################
+#### Pruning ####
+#################
+
+borg prune                                 \
+    --list                                 \
+    --prefix '{hostname}-'                 \
+    --show-rc                              \
+    --keep-daily   ${KEEP_DAILY_BACKUPS}   \
+    --keep-weekly  ${KEEP_WEEKLY_BACKUPS}  \
+    --keep-monthly ${KEEP_MONTHLY_BACKUPS} \
+    ${BACKUP_DIR}
+
+prune_exit=$?
+
+###################
+#### Finishing ####
+###################
+
+# use highest exit code as global exit code
+global_exit=$(( backup_exit > prune_exit ? backup_exit : prune_exit ))
+
+if [ ${global_exit} -eq 0 ]; then
+    info "Backup and Prune finished successfully"
+elif [ ${global_exit} -eq 1 ]; then
+    info "Backup and/or Prune finished with warnings"
+else
+    info "Backup and/or Prune finished with errors"
 fi
 
-# Check wether file with excludes patterns exists:
-if [ ! -f "/home/${USER}/.backup_exclude" ]; then
-    echo "Exclude file /home/${USER}/.backup_exclude does not exist."
-    exit 1
-fi
-
-# Run backup
-current_time=$(date +'%Y-%m-%d-%H-%M')
-borg create ${BACKUP_DIR}backup_home::${current_time} /home/${USER} --exclude-from /home/${USER}/.backup_exclude
-
-# Delete old backups:
-borg prune ${BACKUP_DIR}backup_home --keep-daily=${DAILY} --keep-weekly=${WEEKLY}
+exit ${global_exit}
