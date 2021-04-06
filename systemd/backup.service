@@ -6,6 +6,6 @@ Requisite=multi-user.target
 Type=oneshot
 # By default only back up /etc, /var/log and /root
 # Add paths to backup as positional arguments 
-ExecStart=/usr/bin/backup
+ExecStart=/usr/bin/save-installed-packages; /usr/bin/backup
 # Change destination and prune settings using env variables
 # See backup script for more info
